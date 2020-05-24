@@ -1,0 +1,16 @@
+{
+  "hmm": 
+         {
+          "A": {
+                "Rainy" : {"Rainy": 0.7, "Sunny": 0.3},
+                "Sunny" : {"Rainy": 0.4, "Sunny": 0.6}
+               },
+               
+          "B": {
+                "Rainy" : {"Walk": 0.1, "Shop": 0.4, "Clean": 0.5},
+                "Sunny" : {"Walk": 0.6, "Shop": 0.3, "Clean": 0.1}
+               },
+               
+          "pi": {"Rainy": 0.6, "Sunny": 0.4}        
+         }
+}
