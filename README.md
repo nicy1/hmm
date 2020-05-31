@@ -22,7 +22,7 @@ File 'death_recovered.csv'
 --------------------------
 This dataset illustrates the COVID-19 stats and patients tracking in India, at the state and city level, over time.
 
-It is located at the following link: https://api.covid19india.org/csv/latest/death_and_recovered.csv
+It is just a part of the complete dataset 'death_and_recovered.csv' (main one used) located at the following link: https://api.covid19india.org/csv/latest/death_and_recovered.csv
 
 Contents:
  - Sl_No: serial number of the record
