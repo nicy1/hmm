@@ -7,7 +7,7 @@ HMM's Functions:
  - forward():  computes the likelihood P(O|λ)
  - backward(): it is the time-reversed version of the Forward Algorithm
  - viterbi():  computes the best hidden state sequence Q (Decoding)
- - forward_backward(): Learn the HMM parameters A, B and Pi (Learning)
+ - forward_backward(): Learn the HMM parameters A, B and pi (Learning)
  
 File 'localdataset.json' 
 ------------------------
