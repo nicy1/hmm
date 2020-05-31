@@ -12,7 +12,6 @@ HMM's Functions:
 File 'localdataset.json' 
 ------------------------
 It is a dataset created for testing purpose.
-
 Contents:
  - States: Rainy, Sunny
  - Observations: Walk, Shop, Clean
@@ -21,9 +20,7 @@ Contents:
 File 'death_recovered.csv'
 --------------------------
 This dataset illustrates the COVID-19 stats and patients tracking in India, at the state and city level, over time.
-
 It is located at the following link: https://api.covid19india.org/csv/latest/death_and_recovered.csv
-
 Contents:
  - Sl_No: serial number of the record
  - Date: record's date
