@@ -24,7 +24,7 @@ Contents:
 - shake_numeric: amount of vibration of the smartphone while performing touch actions
 - orientation_numeric: recors whether the touch behavior was recorded while the device is in the landscape orientation or the portrait one
 - type_numeric: recors whether the touch behavior typing in a word or in a number
-- class: android/others
+- class: android id /others
 
 3. File 'advertisement_bandits.csv': 
 ------------------------------------
