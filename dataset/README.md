@@ -11,7 +11,7 @@ Contents:
 - visually_mask: a boolean indicating the visaully determined mask
 - software_mask: a boolean indicating the software determined mask
 
-3. File 'touch_dynamics.csv': 
+2. File 'touch_dynamics.csv': 
 -----------------------------
 It contains touch dynamic informations of participants, collected using TouchSense (available at 'https://play.google.com/store/apps/details?id=org.mun.navid.touchsens'). While the user interacts with the keyboard, it captures the touch inputs corresponding to thodse actions and stores them in a data file.
 Contents:
@@ -26,7 +26,7 @@ Contents:
 - type_numeric: recors whether the touch behavior typing in a word or in a number
 - class: android/others
 
-2. File 'advertisement_bandits.csv': 
+3. File 'advertisement_bandits.csv': 
 ------------------------------------
 It indicates the bandits who are advertised or not after breaking the law.
 Contents:
