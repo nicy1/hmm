@@ -4,40 +4,25 @@ Implementation of Hidden Markov Model (HMM) using python3
 File 'hmm_scaled.py' 
 --------------------
 HMM's Functions:
- - forward():  computes the likelihood P(O|λ)
- - backward(): it is the time-reversed version of the Forward Algorithm
- - viterbi():  computes the best hidden state sequence Q (Decoding)
- - forward_backward(): Learn the HMM parameters A, B and pi (Learning)
+ - _set_log_model(self): allows to set the log model
+ - check_prob(self): checks the probabilities distribution 
+ - _forward_scaled(self, O): computes the likelihood P(O|Model)
+ - _backward_scaled(self, O): time-reversed version of the Forward algorithm
+ - _forward_backward_multi_scaled(self, obs_sequences): learn the HMM parameters A, B and pi (HMM training)
+ - _viterbi_log(self, O, show='yes'): given an observation sequence O, computes the best hidden state sequence Q (Decoding)
+ - predict(self, t, curr_state): given current state at time t, predict the next hidden state at t+1
  
-File 'localdataset.json' 
+ 
+File 'random_model.json' 
 ------------------------
-It is a dataset created for testing purpose.
-
-Contents:
- - States: Rainy, Sunny
- - Observations: Walk, Shop, Clean
- - A (states transitions probabilities matrix), B (states emissions probabilities matrix), pi (states start prob.)
+It is the initial model (pi, A and B).
   
-File 'death_recovered.csv'
---------------------------
-This dataset illustrates the COVID-19 stats and patients tracking in India, at the state and city level, over time.
+  
+File 'hmm_readFile.py'
+----------------------
+This file splits the dataset in train (x_train: independent features, y_train: dependent targets) and test data (x_test: independent features, y_test: dependent targets), 70% and 30% respectively.
 
-It is just a part of the complete dataset 'death_and_recovered.csv' (main one used) located at the following link: https://api.covid19india.org/csv/latest/death_and_recovered.csv
 
-Contents:
- - Sl_No: serial number of the record
- - Date: record's date
- - Age Bracket: age of the patient
- - Gender: gender of the patient
- - Patient_Status: deceased/recovered
- - City: city where stay the patient
- - District: district where stay the patient
- - State:  state where stay the patient
- - Statecode: state code
- - Notes: some informations about the patient
- - Nationality: of patient
- - Source_1: source of the information about the patient
- - Source_2:
- - Source_3:
- - Patient_Number (Could be mapped later):
-
+File 'main.py'
+--------------
+The main file that tests HMM functionalities.
