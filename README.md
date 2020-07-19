@@ -1,8 +1,8 @@
 # hmm
 Implementation of Hidden Markov Model (HMM) using python3
 
-File 'hmm.py' (Main file)
--------------------------
+File 'hmm_scaled.py' 
+--------------------
 HMM's Functions:
  - forward():  computes the likelihood P(O|λ)
  - backward(): it is the time-reversed version of the Forward Algorithm
