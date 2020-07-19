@@ -6,7 +6,7 @@ File 'hmm_scaled.py'
 HMM's Functions:
  - _set_log_model(self): allows to set the log model
  - check_prob(self): checks the probabilities distribution 
- - _forward_scaled(self, O): computes the likelihood P(O|Model)
+ - _forward_scaled(self, O): computes the likelihood P (O|Model)
  - _backward_scaled(self, O): time-reversed version of the Forward algorithm
  - _forward_backward_multi_scaled(self, obs_sequences): learn the HMM parameters A, B and pi (HMM training)
  - _viterbi_log(self, O, show='yes'): given an observation sequence O, computes the best hidden state sequence Q (Decoding)
