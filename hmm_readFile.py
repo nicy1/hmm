@@ -5,7 +5,7 @@ import json
 import csv
 
 import pandas as pd
-from sklearn.model_selection import train_test_split
+import numpy as np
 from collections import OrderedDict
 
 
@@ -16,115 +16,96 @@ from collections import OrderedDict
 class readFile:
     def __init__ (self, filename=None):
 
-        self._read_parameters(filename)
-
         data = pd.read_csv(open(filename))
-        # Splitting file in train_file and test_file
-        Y = data['Protocol']                          # Target values (dependent variables)
-        X = data.drop('Protocol', axis=1)         
-        
-        # Train_data: 80%, Test_data: 20%
-        x_train,x_test,y_train,y_test = train_test_split(X, Y, test_size=0.2, random_state=0)   
+        # Splitting file in train_set (80%) and test_set (20%) 
+        train_set, test_set = np.split(data, [int(0.8 * len(data))])
+   
+        # Save train and test set
+        pd.DataFrame(train_set).to_csv("train_set.csv",encoding='utf-8',index=False)
+        pd.DataFrame(test_set).to_csv("test_set.csv",encoding='utf-8',index=False)
 
-        # Save Train and Test data
-        pd.DataFrame(x_train).to_csv("x_train.csv",encoding='utf-8',index=False)     # Train_data observ.
-        pd.DataFrame(y_train).to_csv("y_train.csv",encoding='utf-8',index=False)     # Train_data states
-        pd.DataFrame(x_test).to_csv("x_test.csv",encoding='utf-8',index=False)       # Test_data observ.
-        pd.DataFrame(y_test).to_csv("y_test.csv",encoding='utf-8',index=False)       # Test_data states
-
+        self._learn_init_prob()    # Learn initial probabilities, train and test data
+     
     # ----------------------------------------------------------------------    
 
-    def _read_parameters(self, filename):
-        self.symbolsIndexes = {}
-        self.compute_transition_prob = {}
-        self.compute_emission_prob = {}
-
-        csv_reader_x = csv.DictReader(open(filename, mode='r'))
-        rows = list(csv_reader_x)
-        length_x = len(rows)
+    def _learn_init_prob(self):
         
-        count = 0
-        for i,row in enumerate(rows):
-          obs = str(row['Source'])+'-'+str(row['Destination'])+'-'+str(row['Length'])
-          if obs not in self.symbolsIndexes:
-             self.symbolsIndexes[obs] = 'obs'+str(count)
-             count += 1
-          obs_seq = [self.symbolsIndexes[obs]]
-          #obs_seq = readFile.look_up_table (self, obs)             # Check if the data is null and convert it 
-          #obs_seq = readFile.normalize(self, obs)                  # Normalize data
-          state = str(row['Protocol'])                              # Get the state in row i
-          #state = readFile.normalize(self, state).upper()          # Normalize data
+        self.states = []
+        self.symbols = []
+        self.train_data = []
+        self.test_data = []
+        self.targets = []           # Hidden states (target for prediction)
 
-          if state not in self.compute_emission_prob.keys():
-             self.compute_emission_prob[state] = {}
-          for obs in obs_seq:
-            if obs not in self.compute_emission_prob[state]:
-               self.compute_emission_prob[state][obs] = 0
-            self.compute_emission_prob[state][obs] += 1
-                  
-          if i == length_x-1:                # EOF
+        self.trans_prob = {}
+        self.emis_prob = {}
+        self.obs_lookUpTable = {}
+        
+        # Train data
+        csv_reader = csv.DictReader(open("train_set.csv", mode='r'))
+        csv_reader = list(csv_reader)
+
+        for i, row in enumerate(csv_reader):
+          obs = str(row['Source']) + str(row['Destination']) + str(row['Length'])
+          if obs not in self.obs_lookUpTable:
+             self.obs_lookUpTable[obs] = 'obs'+str(len(self.obs_lookUpTable))
+          obs = self.obs_lookUpTable[obs]
+          #obs = self._normalize(obs)          # Normalize data
+          from_state = str(row['Protocol']) 
+
+          # Add training data, state and symbol
+          self.train_data.append(obs) 
+          self.states.append(from_state)
+          self.symbols.append(obs)
+          
+          # Emission probabilities
+          if from_state not in self.emis_prob.keys():
+             self.emis_prob[from_state] = {}
+          if obs not in self.emis_prob[from_state]:
+             self.emis_prob[from_state][obs] = 0
+          self.emis_prob[from_state][obs] += 1
+
+          # EOF (no transition)       
+          if i == len(csv_reader)-1:      
              break
 
-          if state not in self.compute_transition_prob.keys():
-            self.compute_transition_prob[state] = {}
-          next_state = str(rows[i+1]['Protocol']).upper()                 # Next state
+          # Transition probabilities
+          if from_state not in self.trans_prob.keys():
+             self.trans_prob[from_state] = {}
+          to_state = str(csv_reader[i+1]['Protocol'])            
+          if to_state not in self.trans_prob[from_state]:
+            self.trans_prob[from_state][to_state] = 0
+          self.trans_prob[from_state][to_state] += 1
 
-          if next_state not in self.compute_transition_prob[state]:
-            self.compute_transition_prob[state][next_state] = 0
-          self.compute_transition_prob[state][next_state] += 1
+
+        # Test data
+        csv_reader = csv.DictReader(open("test_set.csv", mode='r'))
+        for i, row in enumerate(csv_reader):
+          obs = str(row['Source']) + str(row['Destination']) + str(row['Length'])
+          if obs not in self.obs_lookUpTable:
+             self.obs_lookUpTable[obs] = 'obs'+str(len(self.obs_lookUpTable))
+          obs = self.obs_lookUpTable[obs]
+          #obs = self._normalize(obs)          # Normalize data
+          state = str(row['Protocol'])
+
+          # Add testing data, state and symbol
+          self.test_data.append([obs])
+          self.targets.append(state)           # Hidden states (target for prediction)
+          self.states.append(state)
+          self.symbols.append(obs)
+
+        self.states = set(self.states)         # Eliminate duplicate
+        self.symbols = set(self.symbols)
 
     # ---------------------------------------------------------------------- 
  
     # Return HMM parameters, train_data and test_data
     def get_data(self):
-
-        # Put 'y_test' states in vector 'y_test'
-        y_test = []
-        csv_reader_y = csv.reader(open("y_test.csv", mode='r'))
-        for i,row in enumerate(csv_reader_y):
-          if i != 0:
-            y_test.append(row[0].upper())  
-
-        # Put 'y_train' states in vector 'y_train'
-        y_train = []
-        csv_reader_y = csv.reader(open("y_train.csv", mode='r'))
-        for i,row in enumerate(csv_reader_y):
-          if i != 0:
-            y_train.append(row[0].upper())
-
-        # Retrieve train_data
-        x_train = []
-        csv_reader_x = csv.DictReader(open("x_train.csv", mode='r'))
-        for row in csv_reader_x:
-          obs = str(row['Source'])+'-'+str(row['Destination'])+'-'+str(row['Length'])
-          obs_seq = [self.symbolsIndexes[obs]]
-          #obs_seq = readFile.look_up_table (self, obs)          # Check if the data is null and convert it 
-          #obs_seq = readFile.normalize(self, obs)               # Normalize data
-          x_train.append(self.symbolsIndexes[obs])
-          
-        # Retrieve test_data
-        x_test = []
-        csv_reader_x = csv.DictReader(open("x_test.csv", mode='r'))
-        for row in csv_reader_x:
-          obs = str(row['Source'])+'-'+str(row['Destination'])+'-'+str(row['Length'])
-          obs_seq = [self.symbolsIndexes[obs]]
-          #obs_seq = readFile.look_up_table (self, obs)             # Check if the data is null and convert it 
-          #obs_seq = readFile.normalize(self, obs)                  # Normalize data
-          x_test.append(obs_seq)
-        
-        return (self.compute_transition_prob,self.compute_emission_prob,x_train,x_test,y_train,y_test)
+      return (self.states, self.symbols, self.trans_prob, self.emis_prob, \
+              self.train_data, self.test_data, self.targets)
        
     # ----------------------------------------------------------------------
 
-    def look_up_table(self, word):                # Gestion of a null value
-        if word == '':
-           return 'unknown'
-        else: 
-           return word
-
-    # ----------------------------------------------------------------------
-
-    def to_lowercase(self, words):
+    def _to_lowercase(self, words):
         """Convert all characters to lowercase from list of words"""
         new_words = ''
         for word in words:
@@ -133,7 +114,16 @@ class readFile:
 
     # ----------------------------------------------------------------------
 
-    def replace_numbers(self, words):
+    def _to_uppercase(self, words):
+        """Convert all characters to uppercase from list of words"""
+        new_words = ''
+        for word in words:
+            new_words +=word.upper()
+        return new_words
+
+    # ----------------------------------------------------------------------
+
+    def _replace_numbers(self, words):
         """Replace all interger occurrences in list of words"""
 
         number_to_word = {'0':'zero', '1':'one', '2':'two', '3':'three', '4':'four', \
@@ -149,17 +139,17 @@ class readFile:
 
     # ----------------------------------------------------------------------
 
-    def normalize (self, words):
+    def _normalize (self, words):
       if isinstance(words, list):
         w = []
         for word in words:
-          word = readFile.to_lowercase(self, word)
-          word = readFile.replace_numbers(self, word)
+          word = self._to_lowercase(word)
+          word = self._replace_numbers(word)
           w.append(word)
         return w
       else:
-        words = readFile.to_lowercase(self, words)
-        words = readFile.replace_numbers(self, words)
+        words = self._to_lowercase(words)
+        words = self._replace_numbers(words)
         return words
 
 

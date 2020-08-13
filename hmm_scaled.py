@@ -9,7 +9,7 @@ class HmmScaled:
     # Base class for HMM model - implements Rabiner's algorithm for scaling to avoid underflow
     # Model is (A, B, pi) where A = Transition probs, B = Emission Probs, pi = initial distribution
     # A model can be initialized to random parameters
-    def __init__(self, compute_trans, compute_emis, model_name=None):
+    def __init__(self, states, symbols, compute_trans, compute_emis, model_name=None):
         
         if (not isinstance(compute_trans, dict)):
             print('Argument "compute_trans" is not a dict')
@@ -18,10 +18,8 @@ class HmmScaled:
             print('Argument "compute_emis" is not a dict')
             raise Exception
         
-        self.states = list(compute_trans.keys())
-        tmp = {}
-        [tmp.update(c) for c in compute_emis.values()]
-        self.symbols = list(set(tmp.keys()))
+        self.states = list(states)
+        self.symbols = list(symbols)
         self.N = len(self.states)
         self.M = len(self.symbols)
 
@@ -32,24 +30,28 @@ class HmmScaled:
             self.S_index[s] = i
         for i,sym in enumerate(self.symbols):
             self.O_index[sym] = i
-
+        
         if model_name != None:
            self._set_init_model(model_name)
         else:
+           
            # Dict for initial state probabilities
            self.pi = {}
            count  = 0
            for s in compute_trans:
-             count += sum(compute_trans[s][s0] for s0 in compute_trans[s])   # Tot. number of data
-             for s in self.states:
-               val =  sum(compute_trans[s][s0] for s0 in compute_trans[s])
-               self.pi[s] = val / count
+               count += sum(compute_trans[s][s0] for s0 in compute_trans[s])   # Tot. number of data
+           for s in self.states:
+              if s in compute_trans:
+                 val =  sum(compute_trans[s][s0] for s0 in compute_trans[s])
+              else:
+                 val = 0.0
+              self.pi[s] = val / count
         
            # Matrix for transition probabilities
            self.A = {}
            for s1 in self.states:
              self.A[s1] = {}
-             count = sum(compute_trans[s1][s] for s in compute_trans[s1])
+             count = sum(compute_trans[s1][s0] for s0 in compute_trans[s1])
              for s2 in self.states:
                  if s2 in compute_trans[s1]:
                     self.A[s1][s2] = compute_trans[s1][s2] / count
@@ -66,13 +68,15 @@ class HmmScaled:
                     self.B[s][sym] = compute_emis[s][sym] / count
                  else:
                     self.B[s][sym] = 0.0
-
+         
         # The following are defined to support log version of viterbi
         # We assume that the forward and backward functions use the scaled model
         self.logA = {}
         self.logB = {}
         self.logpi = {}
-
+        self._set_log_model()
+        
+        self.print_hmm()
     # --------------------------------------------------------------------------- 
     
     def _set_init_model(self, model_name):
