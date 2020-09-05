@@ -6,7 +6,7 @@ import hmm_readFile
 # ===============================================================
 
 
-filename = 'skype_packets.csv' 
+filename = 'telepathology.csv' 
 # Get HMM parameters, train_data (for training) and test_data (for decoding)
 readFile = hmm_readFile.readFile(filename)
 (states, symbols, trans_prob, emis_prob, train_data, test_data, targets) = readFile.get_data()

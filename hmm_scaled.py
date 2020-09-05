@@ -34,7 +34,7 @@ class HmmScaled:
         if model_name != None:
            self._set_init_model(model_name)
 
-        else:     
+        else:   
            # Dict for initial state probabilities
            self.pi = {}
            count  = 0
@@ -65,7 +65,7 @@ class HmmScaled:
                     self.B[s][sym] = compute_emis[s][sym] / count
                  else:
                     self.B[s][sym] = sys.float_info.min
-         
+
         # The following are defined to support log version of viterbi
         # We assume that the forward and backward functions use the scaled model
         self.logA = {}

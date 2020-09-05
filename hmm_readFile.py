@@ -45,7 +45,15 @@ class readFile:
         csv_reader = list(csv_reader)
 
         for i, row in enumerate(csv_reader):
-          obs = str(row['Source']) + str(row['Destination']) + str(row['Length'])
+          obs = str(row['Length'])
+          info = str(row['Info'])
+          if 'ACK]' in info:
+             info = info[:info.index('ACK]')+len('ACK]')]
+          elif '[SYN]' in info:
+             info = info[:info.index('[SYN]')+len('[SYN]')]
+
+          obs = obs + '_' + info
+          
           if obs not in self.obs_lookUpTable:
              self.obs_lookUpTable[obs] = 'obs'+str(len(self.obs_lookUpTable))
           obs = self.obs_lookUpTable[obs]
@@ -80,7 +88,15 @@ class readFile:
         # Test data
         csv_reader = csv.DictReader(open("test_set.csv", mode='r'))
         for i, row in enumerate(csv_reader):
-          obs = str(row['Source']) + str(row['Destination']) + str(row['Length'])
+          obs = str(row['Length'])
+          info = str(row['Info'])
+          if 'ACK]' in info:
+             info = info[:info.index('ACK]')+len('ACK]')]
+          elif '[SYN]' in info:
+             info = info[:info.index('[SYN]')+len('[SYN]')]
+
+          obs = obs + '_' + info
+          
           if obs not in self.obs_lookUpTable:
              self.obs_lookUpTable[obs] = 'obs'+str(len(self.obs_lookUpTable))
           obs = self.obs_lookUpTable[obs]
