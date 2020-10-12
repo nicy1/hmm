@@ -16,13 +16,16 @@ from collections import OrderedDict
 class readFile:
     def __init__ (self, filename=None):
 
-        data = pd.read_csv(open(filename))
+        #data = pd.read_csv(filename)
+        data = csv.DictReader(open(filename))
+        data = list(data)
         # Splitting file in train_set (80%) and test_set (20%) 
-        train_set, test_set = np.split(data, [int(0.8 * len(data))])
+        size = int(len(data) * 0.8)
+        self.train_set, self.test_set = data[0:size], data[size:len(data)]
    
         # Save train and test set
-        pd.DataFrame(train_set).to_csv("train_set.csv",encoding='utf-8',index=False)
-        pd.DataFrame(test_set).to_csv("test_set.csv",encoding='utf-8',index=False)
+        #pd.DataFrame(train).to_csv("train.csv",encoding='utf-8',index=False)
+        #pd.DataFrame(test).to_csv("test.csv",encoding='utf-8',index=False)
 
         self._learn_init_prob()    # Learn initial probabilities, train and test data
      
@@ -41,73 +44,57 @@ class readFile:
         self.obs_lookUpTable = {}
         
         # Train data
-        csv_reader = csv.DictReader(open("train_set.csv", mode='r'))
-        csv_reader = list(csv_reader)
-
-        for i, row in enumerate(csv_reader):
-          obs = str(row['Length'])
-          info = str(row['Info'])
-          if 'ACK]' in info:
-             info = info[:info.index('ACK]')+len('ACK]')]
-          elif '[SYN]' in info:
-             info = info[:info.index('[SYN]')+len('[SYN]')]
-
-          obs = obs + '_' + info
+        for i, pkt in enumerate(self.train_set):
+          obs = pkt['Source']+'-'+pkt['Destination']+'-'+pkt['Length']
           
-          if obs not in self.obs_lookUpTable:
-             self.obs_lookUpTable[obs] = 'obs'+str(len(self.obs_lookUpTable))
-          obs = self.obs_lookUpTable[obs]
-          #obs = self._normalize(obs)          # Normalize data
-          from_state = str(row['Protocol']) 
+          tcp_payload_len = self._get_state(pkt['Info'])
+          from_state = str(tcp_payload_len)
+          if tcp_payload_len != 0:                  # Only packet with payload
+            if obs not in self.obs_lookUpTable:
+               self.obs_lookUpTable[obs] = 'obs'+str(len(self.obs_lookUpTable))
+            obs = self.obs_lookUpTable[obs]
+            #obs = self._normalize(obs)          # Normalize data 
 
-          # Add training data, state and symbol
-          self.train_data.append(obs) 
-          self.states.append(from_state)
-          self.symbols.append(obs)
+            # Add training data, state and symbol
+            self.train_data.append(obs) 
+            self.states.append(from_state)
+            self.symbols.append(obs)
           
-          # Emission probabilities
-          if from_state not in self.emis_prob.keys():
-             self.emis_prob[from_state] = {}
-          if obs not in self.emis_prob[from_state]:
-             self.emis_prob[from_state][obs] = 0
-          self.emis_prob[from_state][obs] += 1
+            # Emission probabilities
+            if from_state not in self.emis_prob.keys():
+               self.emis_prob[from_state] = {}
+            if obs not in self.emis_prob[from_state]:
+               self.emis_prob[from_state][obs] = 0
+            self.emis_prob[from_state][obs] += 1
 
-          # EOF (no transition)       
-          if i == len(csv_reader)-1:      
-             break
-
-          # Transition probabilities
-          if from_state not in self.trans_prob.keys():
-             self.trans_prob[from_state] = {}
-          to_state = str(csv_reader[i+1]['Protocol'])            
-          if to_state not in self.trans_prob[from_state]:
-            self.trans_prob[from_state][to_state] = 0
-          self.trans_prob[from_state][to_state] += 1
+            # Transition probabilities
+            if from_state not in self.trans_prob.keys():
+               self.trans_prob[from_state] = {}
+            to_state = self._get_to_state(i)    
+            if to_state == -1:     # EOF (no transiion)
+               break
+            if to_state not in self.trans_prob[from_state]:
+               self.trans_prob[from_state][to_state] = 0
+            self.trans_prob[from_state][to_state] += 1
 
 
         # Test data
-        csv_reader = csv.DictReader(open("test_set.csv", mode='r'))
-        for i, row in enumerate(csv_reader):
-          obs = str(row['Length'])
-          info = str(row['Info'])
-          if 'ACK]' in info:
-             info = info[:info.index('ACK]')+len('ACK]')]
-          elif '[SYN]' in info:
-             info = info[:info.index('[SYN]')+len('[SYN]')]
+        for i, pkt in enumerate(self.test_set):
+          obs = pkt['Source']+'-'+pkt['Destination']+'-'+pkt['Length']
 
-          obs = obs + '_' + info
-          
-          if obs not in self.obs_lookUpTable:
-             self.obs_lookUpTable[obs] = 'obs'+str(len(self.obs_lookUpTable))
-          obs = self.obs_lookUpTable[obs]
-          #obs = self._normalize(obs)          # Normalize data
-          state = str(row['Protocol'])
+          tcp_payload_len = self._get_state(pkt['Info'])
+          if tcp_payload_len != 0:                    # Only packet with
+            if obs not in self.obs_lookUpTable:
+               self.obs_lookUpTable[obs] = 'obs'+str(len(self.obs_lookUpTable))
+            obs = self.obs_lookUpTable[obs]
+            #obs = self._normalize(obs)          # Normalize data
+            state = str(tcp_payload_len)
 
-          # Add testing data, state and symbol
-          self.test_data.append([obs])
-          self.targets.append(state)           # Hidden states (target for prediction)
-          self.states.append(state)
-          self.symbols.append(obs)
+            # Add testing data, state and symbol
+            self.test_data.append([obs])
+            self.targets.append(state)           # Hidden states (target for prediction)
+            self.states.append(state)
+            self.symbols.append(obs)
 
         self.states = set(self.states)         # Eliminate duplicate
         self.symbols = set(self.symbols)
@@ -119,6 +106,28 @@ class readFile:
       return (self.states, self.symbols, self.trans_prob, self.emis_prob, \
               self.train_data, self.test_data, self.targets)
        
+    # ----------------------------------------------------------------------
+    
+    # Compute payload length (amount of bytes transfered)
+    def _get_state(self, info):
+      for tmp in info.split():
+        if 'Len' in tmp:
+          return int(tmp[tmp.index('=')+len('='):])
+    
+    # ----------------------------------------------------------------------
+
+    # Compute payload length (amount of bytes transfered)
+    def _get_to_state(self, i):
+      next_id = i
+      next_payload_len = 0
+      while next_payload_len == 0:
+        next_id += 1
+        # EOF (no transition)       
+        if next_id >= len(list(self.train_set))-1:      
+           return -1 
+        next_payload_len = self._get_state(self.train_set[next_id]['Info'])
+      return int(next_payload_len)
+    
     # ----------------------------------------------------------------------
 
     def _to_lowercase(self, words):

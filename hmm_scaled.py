@@ -33,8 +33,8 @@ class HmmScaled:
         
         if model_name != None:
            self._set_init_model(model_name)
-
-        else:   
+        
+        else:    
            # Dict for initial state probabilities
            self.pi = {}
            count  = 0
@@ -65,7 +65,29 @@ class HmmScaled:
                     self.B[s][sym] = compute_emis[s][sym] / count
                  else:
                     self.B[s][sym] = sys.float_info.min
+        '''
+        # Matrix for transition probabilities
+        self.A = {}
+        tmp = self._random_normalized(self.N, self.N)  # Temporary matrix
+        for s1 in self.states:
+            self.A[s1] = {}
+            for s2 in self.states:
+                self.A[s1][s2] = tmp[self.S_index[s1]][self.S_index[s2]]
 
+        # Dict for initial state probabilities
+        self.pi = {}
+        tmp = self._random_normalized(1, self.N)  # Temporary array
+        for s in self.states:
+            self.pi[s] = tmp[0][self.S_index[s]]
+
+        # Matrix for observation probabilities
+        self.B = {}
+        tmp = self._random_normalized(self.N, self.M)  # Temporary matrix
+        for s in self.states:
+            self.B[s] = {}
+            for o in self.symbols:
+                self.B[s][o] = tmp[self.S_index[s]][self.O_index[o]]
+        '''
         # The following are defined to support log version of viterbi
         # We assume that the forward and backward functions use the scaled model
         self.logA = {}
@@ -264,98 +286,96 @@ class HmmScaled:
     # ---------------------------------------------------------------------------  
 
     # Compute aij for a given (i, j) pair of states
-    def _compute_aij(self, xi_table, gamma_table, i, j):
+    def _compute_aij(self, i, j):
         numerator = 0.0
         denominator = 0.0
         
-        for t in range(len(xi_table)):     
-            denominator += gamma_table[t][i]     # gamma value for i, j
-            numerator += xi_table[t][i][j]       # xi value for i, j
+        for t in range(len(self.xi_table)):     
+            denominator += self.gamma_table[t][i]     # gamma value for i, j
+            numerator += self.xi_table[t][i][j]       # xi value for i, j
         aij = numerator / denominator
         return aij
 
     # ---------------------------------------------------------------------------
     
     # Compute the emission probabilities of a given state i emitting symbol
-    def _compute_bj(self, xi_table, gamma_table, obs_seq, i, symbol):
+    def _compute_bj(self, obs_seq, i, symbol):
         numerator =  0.0 
         denominator = 0.0
         
-        for t in range(len(gamma_table)):     
-            denominator += gamma_table[t][i]        # gamma value for i, j
+        for t in range(len(self.gamma_table)):     
+            denominator += self.gamma_table[t][i]        # gamma value for i, j
             if obs_seq[t] == symbol:
-               numerator += gamma_table[t][i]       # xi value for i, j
+               numerator += self.gamma_table[t][i]       # xi value for i, j
         bj = numerator / denominator
         return bj
-
-    # ---------------------------------------------------------------------------
-
-    def _compute_xi_gamma_tables(self, obs_seq):
-
-        self._forward_scaled(obs_seq)
-        self._backward_scaled(obs_seq)
-
-        xi_table = self._xi(obs_seq)   
-        gamma_table = self._gamma(obs_seq)
-
-        return (xi_table, gamma_table)
 
     # ---------------------------------------------------------------------------
     
     # Given 'obs_sequences', learn the HMM parameters A, B and pi - (LEARNING) 
     # Returns new model (A, B and pi) given the initial model
     # Using Forward-Backwardh algorithm
-    def _forward_backward_multi_scaled(self, obs_seq):
-        count = 2
+    def train(self, obs_seq, iterations = 1, verbose=True):
         
-        for iteration in range(count):
-          temp_pi = {}
-          temp_aij = {}
-          temp_bjk = {}
-          # xi_table: Each element in this is for a given obs in obs_sequences, obs is a vector of symbols
-          # gamma_table: Each element in this is for a given obs in obs_sequences, obs is a vector of symbols
-          (xi_table, gamma_table) =  self._compute_xi_gamma_tables(obs_seq)
-          
-          # Update self.pi
-          for s in self.states:
-            temp_pi[s] = gamma_table[0][s]
+        for i in range(iterations):
+          if verbose:
+            print("Iteration: {}".format(i + 1))
 
-          # Update self.A 
-          for s in self.states:
-            temp_aij[s] = {}
-            for s1 in self.states:
-              temp_aij[s][s1] = self._compute_aij(xi_table, gamma_table, s, s1)
+          self._expectation(obs_seq)
+          self._maximization(obs_seq)
 
-          # Update self.B
-          for s in self.states:
-            temp_bjk[s] = {}
-            for sym in self.symbols:
-              temp_bjk[s][sym] = self._compute_bj(xi_table, gamma_table, obs_seq, s, sym)
-
-          normalizer = 0.0
-          for v in temp_pi.values():
-              normalizer += v
-          for k, v in temp_pi.items():
-              temp_pi[k] = v / normalizer
-            
-          self.A = temp_aij
-          self.B = temp_bjk
-          self.pi = temp_pi
-          self._set_log_model()
-
-        return (self.A, self.B, self.pi)
-  
     # ---------------------------------------------------------------------------
 
-    def train(self, obs_seq):
-        return self._forward_backward_multi_scaled(obs_seq)
+    def _expectation(self, obs_seq):
+        '''
+        Executes expectation step.
+        '''
+        self._forward_scaled(obs_seq)
+        self._backward_scaled(obs_seq)
+
+        self.xi_table = self._xi(obs_seq)   
+        self.gamma_table = self._gamma(obs_seq)
+
+    # ---------------------------------------------------------------------------
+
+    def _maximization(self, obs_seq):
+        '''
+        Executes maximization step.
+        '''
+        temp_pi = {} 
+        temp_aij = {} 
+        temp_bjk = {}
+
+        # Update self.pi
+        for s in self.states:
+            temp_pi[s] = self.gamma_table[0][s]
+        normalizer = 0.0
+        for v in temp_pi.values():
+            normalizer += v
+        for k, v in temp_pi.items():
+            temp_pi[k] = v / normalizer
+ 
+        for s in self.states:
+          temp_bjk[s] = {}
+          temp_aij[s] = {}
+          # Update self.A
+          for s1 in self.states:
+            temp_aij[s][s1] = self._compute_aij(s, s1)
+          # Update self.B
+          for sym in self.symbols:
+            temp_bjk[s][sym] = self._compute_bj(obs_seq, s, sym)
+
+        self.A = temp_aij
+        self.B = temp_bjk
+        self.pi = temp_pi
+        self._set_log_model()
 
     # ---------------------------------------------------------------------------
   
     # Find the best hidden state sequence Q for the given observation sequence - (DECODING)
     # Using "Viterbi algorithm"
     # Returns Q and it's probability
-    def _viterbi_log(self, obs_seq, show='yes'):
+    def _viterbi_log(self, obs_seq, verbose):
         V = [{}]
         path = {}
         # Initialize base cases (t == 0)
@@ -374,7 +394,7 @@ class HmmScaled:
           # Don't need to remember the old paths
           path = newpath
         
-        if show == 'yes':
+        if verbose:
           self._printDptable(V)
 
         (prob, state) = max([(V[len(obs_seq)-1][s0], s0) for s0 in self.states])
@@ -386,8 +406,8 @@ class HmmScaled:
     
     #   ---------------------------------------------------------------------------
 
-    def decode(self, obs, show='yes'):
-      return self._viterbi_log(obs, show)
+    def decode(self, obs, verbose=True):
+      return self._viterbi_log(obs, verbose)
 
     # ---------------------------------------------------------------------------
     

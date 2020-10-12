@@ -24,7 +24,7 @@ print('')
 
 # Find the best hidden state sequence Q for the given observation sequence - (DECODING)
 # Using the Viterbi algorithm
-(prob,states) = model.decode(test_data[0]+test_data[1]+test_data[2], show='yes')
+(prob,states) = model.decode(test_data[0]+test_data[1]+test_data[2])
 print('Test Decoding:')
 print('    Input:', test_data[0]+test_data[1]+test_data[2])
 print('    Output:', states)
@@ -39,7 +39,7 @@ success_prediction = 0
 
 for t,obs in enumerate(test_data):
   # Find the corresponding states which generate obs_sequence
-  (prob, state) = model.decode(obs, show='no')
+  (prob, state) = model.decode(obs, verbose=False)
   if t < len(test_data)-1:
      next_state = model.predict(t, curr_state=state)
     
