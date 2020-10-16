@@ -1,88 +1,84 @@
+import sys
+import os
+
+import json
+import csv
+
 import pandas as pd
 import numpy as np
-import csv
 from collections import OrderedDict
 
-# ==========================================================================
 
+
+# ==========================================================================
 
 
 class read:
     def __init__ (self, filename=None):
 
-        data = pd.read_csv(open(filename))
-        target = data['Protocol']
-        X = data.drop('Protocol', axis=1)
-        
-        # Convert field 'Protocol'into float
-        index_table = {'TCP':0, 'TLSv1.2':1}
-        Y = []
-        for t in target:
-          Y.append(index_table[t])
-              
+        #data = pd.read_csv(filename)
+        data = csv.DictReader(open(filename))
+        data = list(data)
         # Splitting file in train_set (80%) and test_set (20%) 
-        x_train, x_test = np.split(X, [int(0.8 * len(X))])
-        self.y_train, self.y_test = np.split(Y, [int(0.8 * len(Y))])
-   
-        # Save train and test set
-        pd.DataFrame(x_train).to_csv("x_train.csv",encoding='utf-8',index=False)
-        pd.DataFrame(x_test).to_csv("x_test.csv",encoding='utf-8',index=False)
-
+        size = int(len(data) * 0.8)
+        self.train_set, self.test_set = data[0:size], data[size:len(data)]
 
         self._learn_init_prob()    # Learn initial probabilities, train and test data
      
     # ----------------------------------------------------------------------    
 
     def _learn_init_prob(self):
-        
-        self.x_train = []
-        self.x_test = [] 
-        self.lookUpTable = {}  
-        
+        self.x_lookUpTable = {}
+        self.y_lookUpTable = {}         
+
         # Train data
-        csv_reader = csv.DictReader(open("x_train.csv", mode='r'))
-        for row in csv_reader:
-          obs = str(row['Length'])
-          info = str(row['Info'])
-          if 'ACK]' in info:
-             info = info[:info.index('ACK]')+len('ACK]')]
-          elif '[SYN]' in info:
-             info = info[:info.index('[SYN]')+len('[SYN]')]
-
-          obs = obs + '_' + info
-          if obs not in self.lookUpTable:
-            self.lookUpTable[obs] = float(len(self.lookUpTable))
-          obs = self.lookUpTable[obs]
-          # Add training data
-          self.x_train.append([obs]) 
-
-
+        self.x_train, self.y_train = self._compute_data(self.train_set)
         # Test data
-        csv_reader = csv.DictReader(open("x_test.csv", mode='r'))
-        for row in csv_reader:
-          obs = str(row['Length'])
-          info = str(row['Info'])
-          if 'ACK]' in info:
-             info = info[:info.index('ACK]')+len('ACK]')]
-          elif '[SYN]' in info:
-             info = info[:info.index('[SYN]')+len('[SYN]')]
-
-          obs = obs + '_' + info
-          if obs not in self.lookUpTable:
-            self.lookUpTable[obs] = float(len(self.lookUpTable))
-          obs = self.lookUpTable[obs]
-          # Add testing data
-          self.x_test.append([obs])
+        self.x_test, self.y_test = self._compute_data(self.test_set)
 
     # ---------------------------------------------------------------------- 
+
+    def _compute_data(self, dataset):
+      x_data = []
+      y_data = []        
  
-    # Return HMM parameters, train and test
+      for i, pkt in enumerate(dataset):
+          x = pkt['Length']
+          if x not in self.x_lookUpTable:
+             self.x_lookUpTable[x] = float(len(self.x_lookUpTable))
+          x = self.x_lookUpTable[x]
+          x_data.append([x])
+
+          y = int(pkt['ActionType'])
+          if y not in self.y_lookUpTable:
+             self.y_lookUpTable[y] = len(self.y_lookUpTable)
+          y = self.y_lookUpTable[y]
+          y_data.append(y)
+
+      return x_data,y_data
+
+
+    # ----------------------------------------------------------------------
+ 
+    # Return HMM parameters, train_data and test_data
     def get_data(self):
-      return (self.x_train,self.y_train,self.x_test,self.y_test)
+      return (self.x_train, np.array(self.y_train), self.x_test, np.array(self.y_test))
        
-  
+    # ----------------------------------------------------------------------
+    
+    # Compute payload length (amount of bytes transfered)
+    def _get_state(self, info):
+      for tmp in info.split():
+        if 'Len' in tmp:
+          return int(tmp[tmp.index('=')+len('='):])
+
    
 # ==========================================================================
+
+
+
+
+
 
 
 
