@@ -28,56 +28,63 @@ class read:
     # ----------------------------------------------------------------------    
 
     def _learn_init_prob(self):
-        self.x_train = []
-        self.y_train = []
-        self.x_test = []
-        self.y_test = []          
+        self.x_lookUpTable = {}
+        self.y_lookUpTable = {}         
 
-        self.obs_lookUpTable = {}
-        
         # Train data
-        for i, pkt in enumerate(self.train_set):
-          obs = pkt['Source']+'-'+pkt['Destination']+'-'+pkt['Length']
-          
-          tcp_payload_len = self._get_state(pkt['Info'])
-          if tcp_payload_len != 0:                  # Only packet with payload
-            if obs not in self.obs_lookUpTable:
-               self.obs_lookUpTable[obs] = len(self.obs_lookUpTable)
-            obs = self.obs_lookUpTable[obs]
-            
-            self.x_train.append([obs])
-            self.y_train.append(tcp_payload_len)
-
-
+        self.x_train, self.y_train = self._compute_data(self.train_set)
         # Test data
-        for i, pkt in enumerate(self.test_set):
-          obs = pkt['Source']+'-'+pkt['Destination']+'-'+pkt['Length']
-
-          tcp_payload_len = self._get_state(pkt['Info'])
-          if tcp_payload_len != 0:                    # Only packet with
-            if obs not in self.obs_lookUpTable:
-               self.obs_lookUpTable[obs] = len(self.obs_lookUpTable)
-            obs = self.obs_lookUpTable[obs]
-
-            self.x_test.append([obs])
-            self.y_test.append(tcp_payload_len)
+        self.x_test, self.y_test = self._compute_data(self.test_set)
 
     # ---------------------------------------------------------------------- 
+
+    def _compute_data(self, dataset):
+      x_data = []
+      y_data = []        
+ 
+      for i, pkt in enumerate(dataset):
+          x = pkt['Length']
+          if x not in self.x_lookUpTable:
+             self.x_lookUpTable[x] = float(len(self.x_lookUpTable))
+          x = self.x_lookUpTable[x]
+          x_data.append([x])
+
+          y = int(pkt['ActionType'])
+          if y not in self.y_lookUpTable:
+             self.y_lookUpTable[y] = len(self.y_lookUpTable)
+          y = self.y_lookUpTable[y]
+          y_data.append(y)
+
+      return x_data,y_data
+
+
+    # ----------------------------------------------------------------------
  
     # Return HMM parameters, train_data and test_data
     def get_data(self):
       return (self.x_train, self.y_train, self.x_test, self.y_test)
-       
-    # ----------------------------------------------------------------------
-    
-    # Compute payload length (amount of bytes transfered)
-    def _get_state(self, info):
-      for tmp in info.split():
-        if 'Len' in tmp:
-          return int(tmp[tmp.index('=')+len('='):])
 
    
 # ==========================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
