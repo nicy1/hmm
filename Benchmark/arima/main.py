@@ -7,7 +7,7 @@ from sklearn.metrics import mean_squared_error
 
 # ==========================================================================
 
-index_table = {1.0:'TCP', 2.0:'TLSv1.2'}
+index_table = {0.0:'2', 1.0:'4', 2.0:'5'}
 count = 0
 
 def proper_round(num, dec=0):
