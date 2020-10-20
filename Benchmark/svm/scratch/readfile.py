@@ -43,7 +43,7 @@ class read:
       y_data = []        
  
       for i, pkt in enumerate(dataset):
-          x = pkt['Length']
+          x = pkt['Length']         
           if x not in self.x_lookUpTable:
              self.x_lookUpTable[x] = float(len(self.x_lookUpTable))
           x = self.x_lookUpTable[x]

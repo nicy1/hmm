@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score
 print ("-- SVM Classifier --")
 
 
-filename = 'telepathology.csv' 
+filename = 'telepathology3.csv' 
 reader = readfile.read(filename)
 X_train, y_train, X_test, y_test = reader.get_data() 
 print(y_train)
