@@ -11,12 +11,11 @@ readFile = readfile.read(filename)
 (states, symbols, trans_prob, emis_prob, train_data, test_data, targets) = readFile.get_data()
 
 model = hmm.HmmScaled(states, symbols, trans_prob, emis_prob,'init_model.json')
-model.print_hmm()
 # Train the HMM
 model.train(train_data)
 
 model.check_prob()  # Check its probabilities
-#model.print_hmm()   # Print it out
+model.print_hmm()   # Print it out
 print('')
  
 
