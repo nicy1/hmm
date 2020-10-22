@@ -97,7 +97,7 @@ class HmmScaled:
         self.logpi = {}
         self._set_log_model()
         
-        #self.print_hmm()
+        self.print_hmm()
     # --------------------------------------------------------------------------- 
     
     def _set_init_model(self, model_name):
