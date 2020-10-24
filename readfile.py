@@ -43,7 +43,7 @@ class read:
         
         # Train data
         for i, pkt in enumerate(self.train_set):
-            obs = str(pkt['Length'])
+            obs = str(pkt['Length'])+'-'+str(pkt['Ratio'])
             if obs not in self.obs_lookUpTable:
                self.obs_lookUpTable[obs] = 'obs'+str(len(self.obs_lookUpTable))
             obs = self.obs_lookUpTable[obs]
@@ -64,7 +64,7 @@ class read:
 
             if i >= len(list(self.train_set))-1:     # EOF (no transiion)
                break
-
+            # str(pkt['TimeToResp'])+'-'+
             # Transition probabilities
             if from_state not in self.trans_prob.keys():
                self.trans_prob[from_state] = {}
@@ -76,7 +76,7 @@ class read:
 
         # Test data
         for i, pkt in enumerate(self.test_set):
-            obs = str(pkt['Length'])
+            obs = str(pkt['Length'])+'-'+str(pkt['Ratio'])
             if obs not in self.obs_lookUpTable:
                self.obs_lookUpTable[obs] = 'obs'+str(len(self.obs_lookUpTable))
             obs = self.obs_lookUpTable[obs]
