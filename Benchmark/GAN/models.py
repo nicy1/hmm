@@ -32,9 +32,6 @@ class Generator():
         model.summary()
         
         return model
-        #noise = Input(shape=(self.latent_dim,))
-        #data = model(noise)
-        #return Model(noise, data)
 
 
 class Discriminator():
@@ -58,10 +55,6 @@ class Discriminator():
         model.summary()
 
         return model
-
-        #data = Input(shape=self.data_shape)
-        #validity = model(data)
-        #return Model(data, validity)
 
 
 

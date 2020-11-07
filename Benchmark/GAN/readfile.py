@@ -13,6 +13,7 @@ from collections import OrderedDict
 # ==========================================================================
 
 
+
 class read:
     def __init__ (self, filename):
         data = csv.DictReader(open(filename))
@@ -27,51 +28,42 @@ class read:
 
     def _learn_init_prob(self):
         self.x_lookUpTable = {}
-        self.y_lookUpTable = {}    
-
-        self.training_file = 'train.csv' 
-        self.testing_file = 'test.csv'    
+        self.y_lookUpTable = {}       
 
         # Train data
-        headers, rows = self._normalize_data(self.train_set)
-        csvfile = open(self.training_file, 'w')
-        csvwriter = csv.writer(csvfile)
-        csvwriter.writerow(headers)
-        csvwriter.writerows(rows)
+        self.x_train, self.y_train = self._normalize_data(self.train_set)
         # Test data
-        headers, rows = self._normalize_data(self.test_set)
-        csvfile = open(self.testing_file, 'w')
-        csvwriter = csv.writer(csvfile)
-        csvwriter.writerow(headers)
-        csvwriter.writerows(rows)
-        
+        self.x_test, self.y_test = self._normalize_data(self.test_set)
 
     # ---------------------------------------------------------------------- 
 
     def _normalize_data(self, dataset):
-      headers = ['Features', 'Labels']
-      rows = []      
+        x_dataset = []  
+        y_dataset = []    
  
-      for i, pkt in enumerate(dataset):
-          x = str(pkt['Length'])+'-'+str(pkt['Ratio'])        
-          if x not in self.x_lookUpTable:
-             self.x_lookUpTable[x] = float(len(self.x_lookUpTable))
-          x = self.x_lookUpTable[x]
+        for i, pkt in enumerate(dataset):
+            x = str(pkt['Length']) + '-' + str(pkt['Ratio'])        
+            if x not in self.x_lookUpTable:
+               self.x_lookUpTable[x] = float(len(self.x_lookUpTable))
+            x = self.x_lookUpTable[x]
+            x_dataset.append(x)
 
-          y = int(pkt['ActionType'])
-          if y not in self.y_lookUpTable:
-             self.y_lookUpTable[y] = float(len(self.y_lookUpTable))
-          y = self.y_lookUpTable[y]
-          rows.append([x,y])       
+            y = int(pkt['ActionType'])
+            if y not in self.y_lookUpTable:
+               self.y_lookUpTable[y] = float(len(self.y_lookUpTable))
+            y = self.y_lookUpTable[y]
+            y_dataset.append(y)       
 
-      return headers, rows
+        return x_dataset, y_dataset
 
 
     # ----------------------------------------------------------------------
  
     # Return HMM parameters, train_data and test_data
     def get_data(self):
-      return self.training_file, self.testing_file
+        return self.x_train, self.y_train, self.x_test, self.y_test
+
+
 
 
    

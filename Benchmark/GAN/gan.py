@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 from models import Discriminator, Generator
 import pandas as pd
 import sys
+import random
 import numpy as np
 
 
@@ -41,16 +42,17 @@ class GAN():
     
 
     
-    def load_dataset(self, filename):
-        df = pd.read_csv(filename)
-        self.X_train, self.Y_train = df[["Features"]].values, df[["Labels"]].values
+    def load_data(self, x_train, y_train):
+        # Reshape into a batch of inputs for the network
+        self.X_train = np.array(x_train).reshape(len(x_train), 1)      
+        self.Y_train = y_train
         print("X_train")
-        print(self.X_train.shape)
+        print(np.array(self.X_train).shape)
         print("Y_train")
-        print(self.Y_train.shape)
+        print(np.array(self.Y_train).shape)
 
   
-  
+    
     def _generate_real_samples(self, batch_size):
         idx = np.random.randint(0, len(self.X_train), batch_size)
         x_real = self.X_train[idx]
@@ -85,13 +87,10 @@ class GAN():
             g_loss = self.gan_model.train_on_batch(noise, y_real)
 
             d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
-            print(d_loss[0])
-            print(d_loss[1])
-            print(g_loss)
             print ("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100*d_loss[1], g_loss[0]))
 
             if epoch % print_output_every_n_steps == 0:
-               print("Generated data: " , x_generated)
+               print("Generated data: " , [x[0][0] for x in x_generated])
         
         return self.generator
 
