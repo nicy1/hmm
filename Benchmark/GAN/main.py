@@ -1,49 +1,55 @@
 import readfile
 import gan
+import utils
 import random
+import hmm
 import numpy as np
 from matplotlib import pyplot
 from sklearn.metrics import accuracy_score
 
 
 
+util = utils.Utils() 
+model = hmm.HmmScaled()
 
 # Read and normalize dataset according the model
 reader = readfile.read('telepathology1.csv')
-x_train, y_train, x_test, y_test = reader.get_data()
+trainX, trainY, testX, testY = reader.get_data()
 
 # Define GAN parameters
-epochs = 10
-latent_dim = 40
-batch_size = 10
-print_output_every_n_steps = 20
+epochs = len(trainX)
+latent_dim = 1
+feature_num = 1
+batch_size = 1
+
 
 # Build GAN 
-gan_model = gan.GAN(latent_dim)
-gan_model.load_data(x_train, y_train)
+gan = gan.GAN(latent_dim, feature_num)
+gan.load_data(trainX, trainY)
 # Train GAN
-generator = gan_model.train(epochs, batch_size, print_output_every_n_steps)
+generator = gan.train(epochs, batch_size)
+ 
 
-#----------------------#
-# TEST GAN´S GENERATOR #
-#----------------------#
+# Test GAN         
+y_pred = []
+for i in range(len(testX)):
+    temp_X = np.array(testX[i])
+    temp_X = np.array(temp_X).reshape(batch_size, latent_dim, feature_num)
+    predictions = generator.predict(temp_X)
+    y_pred.append(predictions[0][0])
 
-# Load (real) data
-x_real = x_train[:batch_size]
-# Generate (fake) data
-noise = np.random.normal(0, 1, (batch_size, latent_dim))
-x_generated = generator.predict(noise)
-# Convert it into 1D list
-x_generated = [x[0][0] for x in x_generated]
+y_pred = util.convert(y_pred)
+accuracy = accuracy_score(testY, y_pred)
+print('accuracy = %.2f' % (accuracy*100), '%')
 
-print('Generated data: ', x_generated)
-print('Real data: ', x_real)
+
+
 
 # Plot the result
-pyplot.title('GAN - real data and generated data', fontsize=20)
+pyplot.title('GAN - real and predicted data', fontsize=20)
 pyplot.ylim(-3.0, 3.0)
-pyplot.plot(x_real, "b", label = 'real')
-pyplot.plot(x_generated, "r", label = 'generated')
+pyplot.plot(testY, "b", label = 'real')
+pyplot.plot(y_pred, "r", label = 'predicted')
 pyplot.legend()
 pyplot.show()
 

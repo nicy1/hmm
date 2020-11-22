@@ -42,15 +42,15 @@ class read:
         y_dataset = []    
  
         for i, pkt in enumerate(dataset):
-            x = str(pkt['Length']) + '-' + str(pkt['Ratio'])        
+            x = str(pkt['Length']) + '-' + str(pkt['Ratio'])      
             if x not in self.x_lookUpTable:
-               self.x_lookUpTable[x] = float(len(self.x_lookUpTable))
+               self.x_lookUpTable[x] = len(self.x_lookUpTable) 
             x = self.x_lookUpTable[x]
             x_dataset.append(x)
 
             y = int(pkt['ActionType'])
             if y not in self.y_lookUpTable:
-               self.y_lookUpTable[y] = float(len(self.y_lookUpTable))
+               self.y_lookUpTable[y] = len(self.y_lookUpTable)
             y = self.y_lookUpTable[y]
             y_dataset.append(y)       
 

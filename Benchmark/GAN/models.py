@@ -1,64 +1,43 @@
-from keras.layers import Input, Dense, Reshape, Flatten, Dropout
-from keras.layers import BatchNormalization, Activation, ZeroPadding2D
-from keras.layers.advanced_activations import LeakyReLU
-from keras.layers.convolutional import UpSampling2D, Conv2D
-from keras.models import Sequential, Model
-from keras.optimizers import Adam
+from keras import layers
+import keras
 import numpy as np
 
 
 
 class Generator():
-    def __init__(self, latent_dim, data_shape):
+    def __init__(self, latent_dim, feature_num):
         self.latent_dim = latent_dim
-        self.data_shape = data_shape
+        self.feature_num = feature_num
 
 
     def build_generator(self):
-        model = Sequential()
-
-        model.add(Dense(256, input_dim=self.latent_dim))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Dense(512))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Dense(1024))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Dense(np.prod(self.data_shape), activation='linear'))
-        model.add(Reshape(self.data_shape))
-
-        model.summary()
-        
-        return model
+        generator_input = keras.Input(shape=(self.latent_dim,self.feature_num))
+        x = layers.LSTM(75,return_sequences=True)(generator_input)
+        x = layers.LSTM(25)(x)
+        x = layers.Dense(1)(x)
+        x = layers.LeakyReLU()(x)
+        generator = keras.models.Model(generator_input, x)
+        generator.summary()
+        return generator
 
 
 class Discriminator():
-    def __init__(self, data_shape):
-        self.data_shape = data_shape
+    def __init__(self, latent_dim):
+        self.latent_dim = latent_dim
 
-
+    
     def build_discriminator(self):
-        model = Sequential()
-
-        model.add(Flatten(input_shape=self.data_shape))
-        model.add(Dense(512))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(Dense(256))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(Dense(1, activation='sigmoid'))
-        # Compile model
-        optimizer = Adam(lr=0.0002, beta_1=0.5)
-        model.compile(loss='binary_crossentropy', optimizer=optimizer,metrics=['accuracy'])
-
-        model.summary()
-
-        return model
-
-
-
-
+        discriminator_input = layers.Input(shape=(self.latent_dim+1,1))
+        y = layers.Dense(72)(discriminator_input)
+        y = layers.LeakyReLU(alpha=0.05)(y)
+        y = layers.Dense(100)(y)
+        y = layers.LeakyReLU(alpha=0.05)(y)
+        y = layers.Dense(10)(y)
+        y = layers.LeakyReLU(alpha=0.05)(y)
+        y = layers.Dense(1,activation='sigmoid')(y)
+        discriminator = keras.models.Model(discriminator_input, y)
+        discriminator.summary()
+        return discriminator
 
 
 
